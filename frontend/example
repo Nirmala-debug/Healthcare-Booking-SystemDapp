@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Healthcare DApp</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #fff8f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            width: 340px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        h2 { color: #e11d48; }
+
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 10px;
+        }
+
+        button {
+            background: #f472b6;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #e11d48;
+        }
+
+        .wallet {
+            font-size: 12px;
+            margin-top: 15px;
+            white-space: pre-line;
+        }
+
+        #appointmentsContainer {
+            margin-top: 15px;
+        }
+
+        label {
+        font-size: 13px;
+        color: #555;
+        display: block;
+        margin-top: 8px;
+    }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <h2>🌸 Healthcare DApp</h2>
+    <button onclick="connectWallet()">Connect Wallet</button>
+    <select id="userRole">
+        <option value="patient">👤 Patient</option>
+        <option value="doctor">👨‍⚕️ Doctor</option>
+    </select>
+
+    <button onclick="deposit()">Deposit 1 ETH</button>
+    <button onclick="withdraw()">Withdraw</button>
+
+    <select id="doctor">
+        <option value="">Select Doctor</option>
+        <option value="Dr Nirmala Tamang">Dr Nirmala Tamang (❤️ Cardiology)</option>
+        <option value="Dr Binod">Dr Binod (🦷 Dentistry)</option>
+        <option value="Dr Pranika">Dr Pranika (🩺 General medicine)</option>
+        <option value="Dr Sita">Dr Sita (👁️ Ophthalmology)</option>
+        <option value="Dr Pema">Dr Pema (🧴 Dermatology)</option>
+        <option value="Dr Nima">Dr Nima (💓 Hypertension)</option>
+        <option value="Dr Asmin">Dr Asmin (🧪 Diabetes)</option>
+    </select>
+
+    <select id="purpose">
+        <option value="">Select Purpose</option>
+        <option value="0">🩺 General checkup</option>
+        <option value="1">💓 Blood pressure</option>
+        <option value="2">🧪 Sugar check</option>
+        <option value="3">🦷 Dental</option>
+        <option value="4">👁 Eye</option>
+        <option value="5">🧴 Skin</option>
+        <option value="6">❤️ Heart</option>
+    </select>
+
+    <input type="datetime-local" id="appointmentTime">
+
+    <button id="bookBtn" onclick="book()">Book Appointment</button>
+
+    <div style="margin-top:10px;">
+        <button onclick="filterAppointments('all')">View Appointment</button>
+        <button onclick="filterAppointments('upcoming')">Upcoming</button>
+        <button onclick="filterAppointments('past')">Past</button>
+    </div>
+
+    <div id="walletAddress" class="wallet"></div>
+    <div id="status" class="wallet"></div>
+
+    <div id="appointmentsContainer"></div>
+</div>
+
+<script src="ethers.min.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

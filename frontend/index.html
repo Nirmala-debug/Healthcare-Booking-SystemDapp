@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Healthcare DApp</title>
+
+    <style>
+        body {
+    font-family: Arial;
+    background: linear-gradient(135deg, #ffe4ec, #fff8f6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+        .container {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    width: 340px;
+    text-align: center;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.08); /* 🔥 updated */
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 10px;
+        }
+
+        button {
+            background: #f472b6;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #e11d48;
+        }
+
+        .wallet {
+            font-size: 12px;
+            margin-top: 15px;
+            white-space: pre-line;
+        }
+
+        #appointmentsContainer {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- ✅ LOGO + TITLE -->
+    <div style="text-align:center; margin-bottom:15px;">
+        <img src="img.png" style="
+    width:150px;
+    height:90px;
+    object-fit:cover;
+    object-position:center;
+    display:block;
+    margin:auto;
+">
+
+        <div style="
+            font-size:18px;
+            font-weight:bold;
+            color:#e11d48;
+        ">
+            Healthcare DApp
+        </div>
+
+    </div>
+
+    <!-- 🔗 CONNECT -->
+    <button onclick="connectWallet()">Connect Wallet</button>
+
+    <!-- 👤 ROLE -->
+    <select id="userRole">
+        <option value="patient">👤 Patient</option>
+        <option value="doctor">👨‍⚕️ Doctor</option>
+    </select>
+
+    <!-- 💰 PAYMENT -->
+    <button onclick="deposit()">Deposit 1 ETH</button>
+    <button onclick="withdraw()">Withdraw</button>
+
+    <!-- 👨‍⚕️ DOCTOR -->
+    <select id="doctor">
+        <option value="">Select Doctor</option>
+        <option value="Dr Nirmala Tamang">Dr Nirmala Tamang (❤️ Cardiology)</option>
+        <option value="Dr Binod">Dr Binod (🦷 Dentistry)</option>
+        <option value="Dr Pranika">Dr Pranika (🩺 General medicine)</option>
+        <option value="Dr Sita">Dr Sita (👁️ Ophthalmology)</option>
+        <option value="Dr Pema">Dr Pema (🧴 Dermatology)</option>
+        <option value="Dr Nima">Dr Nima (💓 Hypertension)</option>
+        <option value="Dr Asmin">Dr Asmin (🧪 Diabetes)</option>
+    </select>
+
+    <!-- 📋 PURPOSE -->
+    <select id="purpose">
+        <option value="">Select Purpose</option>
+        <option value="0">🩺 General checkup</option>
+        <option value="1">💓 Blood pressure</option>
+        <option value="2">🧪 Sugar check</option>
+        <option value="3">🦷 Dental</option>
+        <option value="4">👁 Eye</option>
+        <option value="5">🧴 Skin</option>
+        <option value="6">❤️ Heart</option>
+    </select>
+
+    <!-- ⏰ TIME -->
+    <input type="datetime-local" id="appointmentTime">
+
+    <!-- 📅 BOOK -->
+    <button id="bookBtn" onclick="book()">Book Appointment</button>
+
+    <!-- 📊 FILTER -->
+    <div style="margin-top:10px;">
+        <button onclick="filterAppointments('all')">View Appointment</button>
+        <button onclick="filterAppointments('upcoming')">Upcoming</button>
+        <button onclick="filterAppointments('past')">Past</button>
+    </div>
+
+    <!-- 💬 STATUS -->
+    <div id="walletAddress" class="wallet"></div>
+    <div id="status" class="wallet"></div>
+
+    <!-- 📦 APPOINTMENTS -->
+    <div id="appointmentsContainer"></div>
+
+</div>
+
+<script src="ethers.min.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
