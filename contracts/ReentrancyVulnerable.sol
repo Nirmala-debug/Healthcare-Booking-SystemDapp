@@ -20,14 +20,15 @@ contract ReentrancyVulnerable {
         balances[msg.sender] += msg.value;
     }
 
-    // WITHDRAW (still vulnerable for demo)
     function withdraw() external {
         uint256 amount = balances[msg.sender];
 
-        (bool success,) = msg.sender.call{value: amount}("");
-        require(success);
+        require(amount > 0, "No balance");
 
-        balances[msg.sender] = 0;
+        balances[msg.sender] = 0;  // ✅ update first
+
+        (bool success,) = msg.sender.call{value: amount}("");
+        require(success, "Transfer failed");
     }
 
     // BOOK APPOINTMENT
