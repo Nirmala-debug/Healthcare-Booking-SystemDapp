@@ -5,16 +5,23 @@ contract ReentrancyVulnerable {
 
     mapping(address => uint256) public balances;
 
-    // ✅ NEW: appointment storage
-    mapping(address => uint256) public appointments;
+    struct Appointment {
+        address patient;
+        string doctor;
+        uint8 purpose;
+        uint256 time;
+    }
 
+    mapping(address => Appointment[]) public myAppointments;
+    Appointment[] public allAppointments;
+
+    // DEPOSIT
     function deposit() public payable {
         balances[msg.sender] += msg.value;
     }
 
-    // 🔴 Vulnerable withdraw function
+    // WITHDRAW (still vulnerable for demo)
     function withdraw() external {
-
         uint256 amount = balances[msg.sender];
 
         (bool success,) = msg.sender.call{value: amount}("");
@@ -23,10 +30,38 @@ contract ReentrancyVulnerable {
         balances[msg.sender] = 0;
     }
 
-    // ✅ NEW: book appointment
-    function bookAppointment(uint256 _time) public payable {
-        require(msg.value == 1 ether, "Must pay 1 ETH");
+    // BOOK APPOINTMENT
+    function bookAppointment(
+        string memory _doctor,
+        uint8 _purpose,
+        uint256 _time
+    ) public {
 
-        appointments[msg.sender] = _time;
+        Appointment memory newAppointment = Appointment(
+            msg.sender,
+            _doctor,
+            _purpose,
+            _time
+        );
+
+        myAppointments[msg.sender].push(newAppointment);
+        allAppointments.push(newAppointment);
+    }
+
+    // GET MY APPOINTMENTS
+    function getMyAppointments() public view returns (Appointment[] memory) {
+        return myAppointments[msg.sender];
+    }
+
+    // GET ALL APPOINTMENTS (for doctor)
+    function getAllAppointments() public view returns (Appointment[] memory) {
+        return allAppointments;
+    }
+
+    // CANCEL
+    function cancelAppointment(uint index) public {
+        require(index < myAppointments[msg.sender].length, "Invalid index");
+
+        delete myAppointments[msg.sender][index];
     }
 }

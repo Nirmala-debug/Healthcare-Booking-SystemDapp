@@ -1,4 +1,4 @@
-const contractAddress ="0x99dBE4AEa58E518C50a1c04aE9b48C9F6354612f";
+const contractAddress ="0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
 let provider;
 let signer;
@@ -16,6 +16,15 @@ const doctorInfo = {
     "Dr Nima": { rating: 4.3, distance: "6 km" },
     "Dr Asmin": { rating: 4.4, distance: "4 km" }
 };
+const doctorSpecialization = {
+    "Dr Nirmala Tamang": "❤️ Cardiology",
+    "Dr Binod": "🦷 Dentistry",
+    "Dr Pranika": "🩺 General",
+    "Dr Sita": "👁 Ophthalmology",
+    "Dr Pema": "🧴 Dermatology",
+    "Dr Nima": "💓 Hypertension",
+    "Dr Asmin": "🧪 Diabetes"
+};
 
 const femaleDoctors = [
     "Dr Nirmala Tamang",
@@ -24,12 +33,12 @@ const femaleDoctors = [
     "Dr Sita"
 ];
 
-// ✅ TIME CATEGORY
+// TIME CATEGORY
 function getTimeCategory(hour) {
-    if (hour >= 5 && hour < 12) return "🌅 Morning";
+    if (hour >= 6 && hour < 12) return "🌅 Morning";
     if (hour >= 12 && hour < 17) return "☀️ Afternoon";
-    if (hour >= 17 && hour < 21) return "🌇 Evening";
-    return "🌙 Night";
+    if (hour >= 17 && hour < 19) return "🌇 Evening";
+     return "";
 }
 
 // STATUS
@@ -42,34 +51,54 @@ function closeAppointments() {
     document.getElementById("appointmentsContainer").innerHTML = "";
 }
 
-// CONNECT WALLET
+// ✅ FIXED CONNECT WALLET
 async function connectWallet() {
-    provider = new ethers.providers.Web3Provider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
-    signer = provider.getSigner();
+    try {
 
-    const address = await signer.getAddress();
+        if (!window.ethereum) {
+            setStatus("❌ MetaMask not installed");
+            return;
+        }
 
-    role = document.getElementById("userRole").value;
+        setStatus("⏳ Connecting wallet...");
 
-    document.getElementById("walletAddress").innerText =
-        "💖 Connected: " + address;
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
 
-    contract = new ethers.Contract(contractAddress, [
-        "function deposit() payable",
-        "function withdraw()",
-        "function bookAppointment(string,uint8,uint256)",
-        "function getMyAppointments() view returns (tuple(address,string,uint8,uint256)[])",
-        "function getAllAppointments() view returns (tuple(address,string,uint8,uint256)[])",
-        "function cancelAppointment(uint)"
-    ], signer);
+        signer = provider.getSigner();
+        const address = await signer.getAddress();
 
-    setStatus("🔗 Connected as " + role);
+        document.getElementById("walletAddress").innerText =
+            "💖 Connected: " + address;
+
+        contract = new ethers.Contract(contractAddress, [
+            "function deposit() payable",
+            "function withdraw()",
+            "function bookAppointment(string,uint8,uint256)",
+            "function getMyAppointments() view returns (tuple(address,string,uint8,uint256)[])",
+            "function getAllAppointments() view returns (tuple(address,string,uint8,uint256)[])",
+            "function cancelAppointment(uint)"
+        ], signer);
+
+        setStatus("🔗 Wallet Connected (Select role)");
+
+    } catch (e) {
+        console.error(e);
+        setStatus("❌ Wallet connection failed");
+    }
 }
 
-// DEPOSIT
+// ✅ FIXED DEPOSIT
 async function deposit() {
     try {
+
+        role = document.getElementById("userRole").value;
+
+        if (!role) {
+            setStatus("⚠️ Please select a role first");
+            return;
+        }
+
         if (!contract) {
             setStatus("⚠️ Connect wallet first");
             return;
@@ -81,10 +110,11 @@ async function deposit() {
             value: ethers.utils.parseEther("1")
         });
 
-        setStatus("⏳ Waiting...");
+        setStatus("⏳ Waiting for confirmation...");
         await tx.wait();
 
         if (role === "doctor") {
+
             document.getElementById("bookBtn").style.display = "none";
             document.getElementById("doctor").style.display = "none";
             document.getElementById("purpose").style.display = "none";
@@ -92,7 +122,9 @@ async function deposit() {
 
             setStatus("👨‍⚕️ Doctor mode + Deposit successful");
             viewAppointment();
-        } else {
+
+        } else if (role === "patient") {
+
             document.getElementById("bookBtn").style.display = "block";
             document.getElementById("doctor").style.display = "block";
             document.getElementById("purpose").style.display = "block";
@@ -121,6 +153,8 @@ async function withdraw() {
 
 // BOOK
 async function book() {
+    role = document.getElementById("userRole").value;
+
     if (role === "doctor") {
         setStatus("❌ Doctor cannot book");
         return;
@@ -136,7 +170,11 @@ async function book() {
             return;
         }
 
-        const selectedDate = new Date(input);
+        const [datePart, timePart] = input.split("T");
+        const [year, month, day] = datePart.split("-");
+        const [hour, minute] = timePart.split(":");
+
+        const selectedDate = new Date(year, month - 1, day, hour, minute);
         if (selectedDate <= new Date()) {
             setStatus("⚠️ Select future time");
             return;
@@ -144,6 +182,12 @@ async function book() {
 
         const time = Math.floor(selectedDate.getTime() / 1000);
 
+       const selectedHour = selectedDate.getHours();
+
+if (selectedHour < 6 || selectedHour > 19) {
+    setStatus("⚠️ Booking allowed only from 6 AM to 7 PM");
+    return;
+}
         setStatus("⏳ Booking...");
         const tx = await contract.bookAppointment(doctor, type, time);
         await tx.wait();
@@ -162,6 +206,9 @@ async function book() {
     }
 }
 
+
+
+
 // VIEW APPOINTMENT
 async function viewAppointment() {
     try {
@@ -169,6 +216,38 @@ async function viewAppointment() {
         let data = role === "doctor"
             ? await contract.getAllAppointments()
             : await contract.getMyAppointments();
+            if (currentFilter === "all") setStatus("📋 All Appointments");
+            if (currentFilter === "upcoming") setStatus("🟢 Upcoming Appointments");
+            if (currentFilter === "past") setStatus("🔴 Past Appointments");
+
+        const now = Math.floor(Date.now() / 1000);
+
+        data = data.filter((a) => {
+            const time = Number(a[3]);
+            const hour = new Date(time * 1000).getHours();
+
+
+            if (hour < 6 || hour > 19) return false;
+
+            // 🔍 apply filter
+            if (currentFilter === "upcoming") return time > now;
+            if (currentFilter === "past") return time <= now;
+
+            return true;
+        });
+
+        // ✅ EMPTY MESSAGE
+        if (data.length === 0) {
+            let msg = currentFilter === "past"
+                ? "🔴 No past appointments"
+                : currentFilter === "upcoming"
+                ? "🟢 No upcoming appointments"
+                : "📭 No appointments";
+
+            document.getElementById("appointmentsContainer").innerHTML =
+                `<p style="text-align:center;">${msg}</p>`;
+            return;
+        }
 
         let output = `
         <div style="text-align:right;">
@@ -176,11 +255,22 @@ async function viewAppointment() {
         </div>`;
 
         data.forEach((a, i) => {
+
+            const appointmentTime = Number(a[3]);
+            const isPast = appointmentTime <= now;
+
+            let statusColor = "";
+            let statusText = "";
+
+            if (currentFilter !== "all") {
+                statusColor = isPast ? "#ef4444" : "#22c55e";
+                statusText = isPast ? "🔴 Past" : "🟢 Upcoming";
+            }
+
             const doctor = a[1];
-            const time = new Date(Number(a[3]) * 1000);
+            const time = new Date(appointmentTime * 1000);
 
             const readable = time.toLocaleString("en-US", {
-                timeZone: "Asia/Kathmandu",
                 hour: "numeric",
                 minute: "2-digit",
                 hour12: true
@@ -195,49 +285,27 @@ async function viewAppointment() {
                 : "male.png";
 
             output += `
-            <div style="
-                margin:10px;
-                padding:15px;
-                border-radius:15px;
-                border:1px solid #eee;
-                background:#fff;
-                box-shadow:0 4px 10px rgba(0,0,0,0.05);
-            ">
+            <div style="margin:10px;padding:15px;border-radius:15px;border:1px solid #eee;background:#fff;">
+                <b>📌 Appointment #${i + 1}</b>
+                ${currentFilter !== "all" ? `
+                <span style="float:right;color:${statusColor};">
+                    ${statusText}
+                </span>
+                ` : ""}<br><br>
 
-                <b style="color:#e11d48;">📌 Appointment #${i + 1}</b><br><br>
+                <img src="${image}" style="width:45px;height:45px;border-radius:50%;"><br>
 
-                <div style="display:flex; gap:10px; align-items:center;">
+                <b>${doctor}</b><br>
+                ${doctorSpecialization[doctor] || ""}<br>
+                ⭐ ${info.rating} 📍 ${info.distance}<br>
 
-                    <img src="${image}" style="width:45px; height:45px; border-radius:50%;">
+                📅 ${readable} • ${category}<br>
 
-                    <div>
-                        <b>${doctor}</b><br>
-                        ⭐ ${info.rating} &nbsp;&nbsp; 📍 ${info.distance}<br>
-
-                        <span style="font-size:12px; color:#777;">
-                            📅 ${readable} • ${category}
-                        </span>
-                    </div>
-                    <div style="margin-top:10px; text-align:right;">
-                        ${role === "patient" ? `
-                        <button onclick="cancelByIndex(${i})"
-                        style="
-                            background:#ef4444;
-                            color:white;
-                            padding:6px 10px;
-                            border:none;
-                            border-radius:8px;
-                            cursor:pointer;
-                        ">
-                            ❌ Cancel
-                        </button>
-                        ` : ""}
-                    </div>
-                    </div>
-                    </div>
-                </div>
+                ${role === "patient" && !isPast ? `
+                    <button onclick="cancelByIndex(${i})">❌ Cancel</button>
+                ` : ""}
             </div>`;
-        }); // ✅ forEach close
+        });
 
         document.getElementById("appointmentsContainer").innerHTML = output;
 
@@ -249,10 +317,20 @@ async function viewAppointment() {
 // CANCEL
 async function cancelByIndex(index) {
     try {
+
+        // ✅ CONFIRMATION POPUP
+        const confirmCancel = confirm("Are you sure you want to cancel this appointment?");
+
+        if (!confirmCancel) {
+            return; // ❌ user clicked Cancel
+        }
+
         const tx = await contract.cancelAppointment(index);
         await tx.wait();
-        setStatus("❌ Cancelled");
+
+        setStatus("❌ Appointment Cancelled");
         viewAppointment();
+
     } catch (e) {
         console.error(e);
         setStatus("❌ Cancel failed");
