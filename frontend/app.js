@@ -3,6 +3,7 @@ const contractAddress ="0x5FbDB2315678afecb367f032d93F642f64180aa3";
 let provider;
 let signer;
 let contract;
+let originalData = null;
 let role = "patient";
 
 let currentFilter = "all";
@@ -77,8 +78,12 @@ async function connectWallet() {
             "function bookAppointment(string,uint8,uint256)",
             "function getMyAppointments() view returns (tuple(address,string,uint8,uint256)[])",
             "function getAllAppointments() view returns (tuple(address,string,uint8,uint256)[])",
-            "function cancelAppointment(uint)"
+            "function cancelAppointment(uint)",
+
+            // ✅ ADD THIS LINE 👇
+            "function updateAppointment(uint,string,uint8,uint256)"
         ], signer);
+
 
         setStatus("🔗 Wallet Connected (Select role)");
 
@@ -194,19 +199,24 @@ if (selectedHour < 6 || selectedHour > 19) {
 
         setStatus("🎉 Appointment booked!");
 
-        document.getElementById("doctor").value = "";
-        document.getElementById("purpose").value = "";
-        document.getElementById("appointmentTime").value = "";
+        /// ✅ RESET FORM PROPERLY
+         document.getElementById("doctor").selectedIndex = 0;
+         document.getElementById("purpose").selectedIndex = 0;
+         document.getElementById("appointmentTime").value = "";
+         document.getElementById("appointmentId").value = "";
 
-        viewAppointment();
+         // ✅ LOAD APPOINTMENTS
+         await viewAppointment();
 
-    } catch (e) {
-        console.error(e);
-        setStatus("❌ Booking failed");
-    }
-}
-
-
+         // ✅ SCROLL DOWN
+         document.getElementById("appointmentsContainer").scrollIntoView({
+           behavior: "smooth"
+         });
+         } catch (e) {
+             console.error(e);
+             setStatus("❌ Booking failed");
+         }
+         }
 
 
 // VIEW APPOINTMENT
@@ -303,8 +313,9 @@ async function viewAppointment() {
 
                 ${role === "patient" && !isPast ? `
                     <button onclick="cancelByIndex(${i})">❌ Cancel</button>
+                    <button onclick="editAppointment(${i}, '${doctor}', ${a[2]}, ${appointmentTime})">✏️ Edit</button>
                 ` : ""}
-            </div>`;
+                </div>`;
         });
 
         document.getElementById("appointmentsContainer").innerHTML = output;
@@ -314,6 +325,121 @@ async function viewAppointment() {
         setStatus("❌ Error loading appointments");
     }
 }
+
+async function updateAppointment() {
+  try {
+    const index = document.getElementById("appointmentId").value;
+    const doctor = document.getElementById("doctor").value;
+    const type = document.getElementById("purpose").value;
+    const timeInput = document.getElementById("appointmentTime").value;
+
+    // ✅ Only patient allowed
+    if (role !== "patient") {
+      alert("❌ Only patient can update appointment");
+      return;
+    }
+
+    // ✅ Validate fields
+    if (index === "" || doctor === "" || timeInput === "") {
+      alert("⚠️ Please fill all fields");
+      return;
+    }
+
+    // ✅ Validate purpose
+    if (type === "" || isNaN(type)) {
+      alert("⚠️ Please select a valid purpose");
+      return;
+    }
+
+    // ✅ Convert time
+    const time = Math.floor(new Date(timeInput).getTime() / 1000);
+
+    if (isNaN(time)) {
+      alert("⚠️ Invalid time selected");
+      return;
+    }
+
+    // ✅ Future time check (VERY IMPORTANT)
+    if (time <= Math.floor(Date.now() / 1000)) {
+      alert("⚠️ Select future time");
+      return;
+    }
+
+    // ✅ Debug logs
+    console.log("INDEX:", index);
+    console.log("DOCTOR:", doctor);
+    console.log("TYPE:", type);
+    console.log("TIME:", time);
+
+    if (!originalData) {
+      alert("⚠️ Please click edit first");
+      return;
+    }
+    if (
+      originalData.doctor === doctor &&
+      originalData.type === String(type) &&
+      originalData.time === String(time)
+    ) {
+      alert("⚠️ Please change something before updating");
+      return;
+    }
+
+    // ✅ Call contract
+    const tx = await contract.updateAppointment(index, doctor, type, time);
+    await tx.wait();
+
+    alert("✅ Appointment updated!");
+
+    // ✅ Reset form after update
+    document.getElementById("doctor").selectedIndex = 0;
+    document.getElementById("purpose").selectedIndex = 0;
+    document.getElementById("appointmentTime").value = "";
+    document.getElementById("appointmentId").value = "";
+
+    // ✅ Refresh UI
+    await viewAppointment();
+
+  } catch (err) {
+    console.error(err);
+    alert(
+      err.reason ||
+      err.data?.message ||
+      err.message ||
+      "Unknown error"
+    );
+  }
+}
+
+function editAppointment(index, doctor, type, time) {
+
+
+console.log("EDIT CLICKED", index, doctor, type, time); //
+
+  document.getElementById("appointmentId").value = index;
+  document.getElementById("doctor").value = doctor;
+  document.getElementById("purpose").value = type;
+
+  const date = new Date(time * 1000);
+
+  const formatted =
+    date.getFullYear() + "-" +
+    String(date.getMonth() + 1).padStart(2, '0') + "-" +
+    String(date.getDate()).padStart(2, '0') + "T" +
+    String(date.getHours()).padStart(2, '0') + ":" +
+    String(date.getMinutes()).padStart(2, '0');
+
+  document.getElementById("appointmentTime").value = formatted;
+  // ✅ STORE ORIGINAL DATA
+    originalData = {
+      doctor: doctor,
+      type: String(type),
+      time: String(time)
+    };
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+
 // CANCEL
 async function cancelByIndex(index) {
     try {
@@ -349,6 +475,7 @@ window.deposit = deposit;
 window.withdraw = withdraw;
 window.book = book;
 window.viewAppointment = viewAppointment;
+window.editAppointment = editAppointment;
 window.cancelByIndex = cancelByIndex;
 window.closeAppointments = closeAppointments;
 window.filterAppointments = filterAppointments;

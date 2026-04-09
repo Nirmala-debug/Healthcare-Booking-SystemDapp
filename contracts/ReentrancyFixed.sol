@@ -89,6 +89,34 @@ contract Healthcare {
         appointments.pop();
     }
 
+    function updateAppointment(
+        uint index,
+        string memory _doctor,
+        uint8 _type,
+        uint256 _time
+    ) public {
+        require(index < appointments.length, "Invalid index");
+
+        Appointment storage appt = appointments[index];
+
+        require(appt.patient == msg.sender, "Not yours");
+        require(_time > block.timestamp, "Invalid time");
+
+        // ❗ free old slot
+        bookedSlots[appt.doctor][appt.time] = false;
+
+        // ❗ check new slot availability
+        require(!bookedSlots[_doctor][_time], "Doctor already booked");
+
+        // update values
+        appt.doctor = _doctor;
+        appt.appointmentType = AppointmentType(_type);
+        appt.time = _time;
+
+        // ❗ mark new slot as booked
+        bookedSlots[_doctor][_time] = true;
+    }
+
     // 👀 Get My Appointments
     function getMyAppointments() public view returns (Appointment[] memory) {
         uint count = 0;
