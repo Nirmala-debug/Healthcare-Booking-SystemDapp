@@ -1,4 +1,4 @@
-const contractAddress ="0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const contractAddress ="0x67d269191c92Caf3cD7723F116c85e6E9bf55933";
 
 let provider;
 let signer;
@@ -97,7 +97,7 @@ async function connectWallet() {
 async function deposit() {
     try {
 
-        role = document.getElementById("userRole").value;
+         const role = document.getElementById("userRole").value;
 
         if (!role) {
             setStatus("⚠️ Please select a role first");
@@ -125,8 +125,10 @@ async function deposit() {
             document.getElementById("purpose").style.display = "none";
             document.getElementById("appointmentTime").style.display = "none";
 
-            setStatus("👨‍⚕️ Doctor mode + Deposit successful");
             viewAppointment();
+            setTimeout(() => {
+                setStatus("👨‍⚕️ Doctor mode + Deposit successful");
+            }, 500);
 
         } else if (role === "patient") {
 
@@ -164,16 +166,39 @@ async function book() {
         setStatus("❌ Doctor cannot book");
         return;
     }
+try{
+     const doctor = document.getElementById("doctor").value;
+    const typeValue = document.getElementById("purpose").value;
+    const input = document.getElementById("appointmentTime").value;
 
-    try {
-        const doctor = document.getElementById("doctor").value;
-        const type = parseInt(document.getElementById("purpose").value);
-        const input = document.getElementById("appointmentTime").value;
+    // ✅ VALIDATE RAW VALUES FIRST
+    if (doctor === "0" || !doctor || !input) {
+        setStatus("⚠️ Please select doctor and time");
+        return;
+    }
 
-        if (!doctor || isNaN(type) || !input) {
-            setStatus("⚠️ Fill all fields");
-            return;
-        }
+    if (typeValue === "")
+     {
+        setStatus("⚠️ Please select a valid purpose");
+        return;
+    }
+    const doctorPurposeMap = {
+        "Dr Nirmala Tamang": [6],
+        "Dr Binod": [3],
+        "Dr Pranika": [0],
+        "Dr Sita": [4],
+        "Dr Pema": [5],
+        "Dr Nima": [1],
+        "Dr Asmin": [2]
+    };
+
+    const type = parseInt(typeValue);
+
+    // ❌ check mismatch
+    if (!doctorPurposeMap[doctor] || !doctorPurposeMap[doctor].includes(type)) {
+        setStatus("⚠️ Please select a valid purpose for this doctor");
+        return;
+    }
 
         const [datePart, timePart] = input.split("T");
         const [year, month, day] = datePart.split("-");

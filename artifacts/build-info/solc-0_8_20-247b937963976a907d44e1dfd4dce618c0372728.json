@@ -1,0 +1,35 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_20-247b937963976a907d44e1dfd4dce618c0372728",
+  "solcVersion": "0.8.20",
+  "solcLongVersion": "0.8.20+commit.a1b79de6",
+  "userSourceNameMap": {
+    "contracts/ReentrancyFixed.sol": "project/contracts/ReentrancyFixed.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "shanghai",
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/ReentrancyFixed.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.20;\r\n\r\ncontract Healthcare {\r\n\r\n    mapping(address => uint256) public balances;\r\n\r\n    // doctor + time slot\r\n    mapping(string => mapping(uint256 => bool)) public bookedSlots;\r\n\r\n    enum AppointmentType {\r\n        General,\r\n        BloodPressure,\r\n        Sugar,\r\n        Dental,\r\n        Eye,\r\n        Skin,\r\n        Cardiology\r\n    }\r\n\r\n    struct Appointment {\r\n        address patient;\r\n        string doctor;\r\n        AppointmentType appointmentType;\r\n        uint256 time;\r\n    }\r\n\r\n    Appointment[] public appointments;\r\n\r\n    // 💰 Deposit\r\n    function deposit() public payable {\r\n        require(msg.value > 0, \"Send ETH\");\r\n        balances[msg.sender] += msg.value;\r\n    }\r\n\r\n    // 💸 Withdraw\r\n    function withdraw() external {\r\n        uint256 amount = balances[msg.sender];\r\n        require(amount > 0, \"No balance\");\r\n\r\n        balances[msg.sender] = 0;\r\n\r\n        (bool success,) = msg.sender.call{value: amount}(\"\");\r\n        require(success, \"Transfer failed\");\r\n    }\r\n\r\n    // 🏥 Book Appointment\r\n    function bookAppointment(\r\n        string memory _doctor,\r\n        uint8 _type,\r\n        uint256 _time\r\n    ) public {\r\n\r\n        require(balances[msg.sender] > 0, \"Deposit first\");\r\n        require(_time > block.timestamp, \"Invalid time\");\r\n\r\n        // ✅ SAME doctor + SAME time block (already correct)\r\n        require(!bookedSlots[_doctor][_time], \"Doctor already booked\");\r\n\r\n        appointments.push(Appointment(\r\n            msg.sender,\r\n            _doctor,\r\n            AppointmentType(_type),\r\n            _time\r\n        ));\r\n\r\n        bookedSlots[_doctor][_time] = true;\r\n    }\r\n\r\n    // ❌ Cancel Appointment\r\n    function cancelAppointment(uint index) public {\r\n        require(index < appointments.length, \"Invalid index\");\r\n\r\n        // ✅ FIX: patient check first (IMPORTANT)\r\n        require(appointments[index].patient == msg.sender, \"Not yours\");\r\n\r\n        // free slot\r\n        bookedSlots[\r\n            appointments[index].doctor\r\n        ][appointments[index].time] = false;\r\n\r\n        // ✅ FIX: swap + pop safely\r\n        uint lastIndex = appointments.length - 1;\r\n\r\n        if (index != lastIndex) {\r\n            appointments[index] = appointments[lastIndex];\r\n        }\r\n\r\n        appointments.pop();\r\n    }\r\n\r\n    function updateAppointment(\r\n        uint index,\r\n        string memory _doctor,\r\n        uint8 _type,\r\n        uint256 _time\r\n    ) public {\r\n        require(index < appointments.length, \"Invalid index\");\r\n\r\n        Appointment storage appt = appointments[index];\r\n\r\n        require(appt.patient == msg.sender, \"Not yours\");\r\n        require(_time > block.timestamp, \"Invalid time\");\r\n\r\n        // ❗ free old slot\r\n        bookedSlots[appt.doctor][appt.time] = false;\r\n\r\n        // ❗ check new slot availability\r\n        require(!bookedSlots[_doctor][_time], \"Doctor already booked\");\r\n\r\n        // update values\r\n        appt.doctor = _doctor;\r\n        appt.appointmentType = AppointmentType(_type);\r\n        appt.time = _time;\r\n\r\n        // ❗ mark new slot as booked\r\n        bookedSlots[_doctor][_time] = true;\r\n    }\r\n\r\n    // 👀 Get My Appointments\r\n    function getMyAppointments() public view returns (Appointment[] memory) {\r\n        uint count = 0;\r\n\r\n        for (uint i = 0; i < appointments.length; i++) {\r\n            if (appointments[i].patient == msg.sender) {\r\n                count++;\r\n            }\r\n        }\r\n\r\n        Appointment[] memory result = new Appointment[](count);\r\n        uint j = 0;\r\n\r\n        for (uint i = 0; i < appointments.length; i++) {\r\n            if (appointments[i].patient == msg.sender) {\r\n                result[j] = appointments[i];\r\n                j++;\r\n            }\r\n        } // ✅ loop close here\r\n\r\n        return result; // ✅ correct place\r\n    }\r\n\r\n    // 👨‍⚕️ Doctor function\r\n    function getAllAppointments() public view returns (Appointment[] memory) {\r\n        return appointments;\r\n    }\r\n}"
+      }
+    }
+  }
+}

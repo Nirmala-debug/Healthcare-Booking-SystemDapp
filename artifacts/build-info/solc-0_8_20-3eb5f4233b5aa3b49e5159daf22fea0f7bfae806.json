@@ -1,0 +1,35 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_20-3eb5f4233b5aa3b49e5159daf22fea0f7bfae806",
+  "solcVersion": "0.8.20",
+  "solcLongVersion": "0.8.20+commit.a1b79de6",
+  "userSourceNameMap": {
+    "contracts/ReentrancyVulnerable.sol": "project/contracts/ReentrancyVulnerable.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "shanghai",
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/ReentrancyVulnerable.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.20;\r\n\r\ncontract ReentrancyVulnerable {\r\n\r\n    mapping(address => uint256) public balances;\r\n\r\n    struct Appointment {\r\n        address patient;\r\n        string doctor;\r\n        uint8 purpose;\r\n        uint256 time;\r\n    }\r\n\r\n    mapping(address => Appointment[]) public myAppointments;\r\n    Appointment[] public allAppointments;\r\n\r\n    // DEPOSIT\r\n    function deposit() public payable {\r\n        balances[msg.sender] += msg.value;\r\n    }\r\n\r\n    function withdraw() external {\r\n        uint256 amount = balances[msg.sender];\r\n\r\n        require(amount > 0, \"No balance\");\r\n\r\n        balances[msg.sender] = 0;  // ✅ update first\r\n\r\n        (bool success,) = msg.sender.call{value: amount}(\"\");\r\n        require(success, \"Transfer failed\");\r\n    }\r\n\r\n    // BOOK APPOINTMENT\r\n    function bookAppointment(\r\n        string memory _doctor,\r\n        uint8 _purpose,\r\n        uint256 _time\r\n    ) public {\r\n\r\n        Appointment memory newAppointment = Appointment(\r\n            msg.sender,\r\n            _doctor,\r\n            _purpose,\r\n            _time\r\n        );\r\n\r\n        myAppointments[msg.sender].push(newAppointment);\r\n        allAppointments.push(newAppointment);\r\n    }\r\n\r\n    // GET MY APPOINTMENTS\r\n    function getMyAppointments() public view returns (Appointment[] memory) {\r\n        return myAppointments[msg.sender];\r\n    }\r\n\r\n    // GET ALL APPOINTMENTS (for doctor)\r\n    function getAllAppointments() public view returns (Appointment[] memory) {\r\n        return allAppointments;\r\n    }\r\n\r\n    // CANCEL\r\n    function cancelAppointment(uint index) public {\r\n        require(index < myAppointments[msg.sender].length, \"Invalid index\");\r\n\r\n        delete myAppointments[msg.sender][index];\r\n    }\r\n}"
+      }
+    }
+  }
+}
